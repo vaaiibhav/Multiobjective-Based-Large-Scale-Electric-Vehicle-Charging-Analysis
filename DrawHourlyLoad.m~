@@ -1,0 +1,64 @@
+% http://open-power-system-data.org/data-sources
+% https://www.entsoe.eu/data/statistics/Pages/monthly_hourly_load.aspx
+function DrawHourlyLoad(w_ev_load)
+
+	% Unit: MW
+% 	ls_hourly_load = xlsread('./data/hourly_load_4.xls');
+    load './data/hourly_load.mat';
+    
+    % grid loads from origin & ev
+	mw_org_load      = ls_hourly_load(:, 2)' * 1e6;
+    w_ev_load       = w_ev_load(1:4:96);
+    w_total_load    = mw_org_load + w_ev_load;
+    
+    % curve of load
+    DrawStackBar(mw_org_load, w_ev_load, w_total_load);
+%     DrawLoadCurve(mw_org_load, w_ev_load, w_total_load);
+end
+
+
+function DrawLoadCurve(mw_org_load, w_ev_load, w_total_load)
+    figure;
+    
+    plot(mw_org_load, '--bo', 'LineWidth', 1.2);
+    hold on
+    plot(w_total_load, '-.r*', 'LineWidth', 1.2);
+    
+    axis( [1 24 1e10 1.7e10] );
+    set(gca,'xtick',0:1:24);
+    %set(gca,'ytick',0:1:10);
+    
+    xlabel('Hours', 'FontSize', 12);
+    ylabel('Power Load (W)', 'FontSize', 12);
+    
+    % Add a legend
+    legend('Original Load', 'EVs Charging Load');
+    grid on
+end
+
+
+function DrawStackBar(mw_org_load, w_ev_load, w_total_load)
+    figure;
+    
+    H = bar(1:24, [mw_org_load' w_ev_load'], 0.6, 'stack');
+    
+%     P = findobj(gca,'type','patch');
+%     set(P(1),'FaceColor', [0 .5 .5], 'EdgeColor', [0 .9 .9], 'LineWidth', 1.5);
+%     set(P(2),'FaceColor', [0 .4 .4], 'EdgeColor', [0 .8 .8], 'LineWidth', 1.5);
+
+    % Adjust the axis limits
+%     axis( [0 25 0.9e9 1.8e9] );
+    axis( [0 25 0.9e10 1.6e10] );
+    set(gca,'xtick',0:1:24);
+
+    % Add title and axis labels
+%     title('Childhood diseases by month')
+    xlabel('Hours', 'FontSize', 12);
+    ylabel('Power Load (W)', 'FontSize', 12);
+
+    % Add a legend
+    legend(H, {'Original Load', 'EVs Charging Load'});
+    grid on
+end
+
+

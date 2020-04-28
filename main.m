@@ -1,0 +1,79 @@
+function main()
+    clc; close all; clear;
+    
+    global all_scores
+    
+    %% 载入代码
+    thesis = pwd;
+    path(strcat(thesis, '/opt;'), path);
+    path(strcat(thesis, '/opt/GA;'), path);
+    path(strcat(thesis, '/opt/PSO;'), path);
+    path(strcat(thesis, '/opt/SA;'), path);
+    path(strcat(thesis, '/opt/scores;'), path);
+    
+    %% 选择优化算法: 0--directly run; 1--GA; 2--PSO; 3--SA
+    alg = 3;
+    nVars = 5;      %5;
+    nPopSize = 1;       %debug by fei
+    nIters = 3000;
+    all_scores = inf*ones(nPopSize, nIters);
+    
+    %% 待求解最优参数值
+    defaultWCoeff = ones(1, 4) * 0.25;
+    defaultMinSOC = 0.2;
+    
+    %% MC模拟运行
+    if alg == 0
+        FuncFitness( [defaultWCoeff, defaultMinSOC] );
+        bestWCoeff = defaultWCoeff;
+        bestMinSOC = defaultMinSOC;
+        
+    else
+        if alg == 1
+            AlgFunc = @GA_MC;
+        elseif alg == 2
+            AlgFunc = @PSO_MC;
+        elseif alg == 3
+            AlgFunc = @SA_MC;
+        end
+        
+        [bestWCoeff, bestMinSOC] = AlgFunc(@PopFunction, @FuncFitness, ...
+                                        nVars, nPopSize, nIters);
+    end
+    
+    % 保存优化结果
+    save(sprintf('OPT_result_Alg(%d)_PopSize(%d)_Gens(%d).mat', ...
+        alg, nPopSize, nIters), ...
+        'bestWCoeff', 'bestMinSOC', 'all_scores', '-v7.3');
+end
+
+
+function [xPop] = PopFunction(GenomeLength,~,options)
+    nPop = options.PopulationSize;
+    RD = rand;
+    xPop = (rand(nPop, GenomeLength) > RD);
+end
+
+
+function [FitVal] = FuncFitness(pop)
+    % 初始参数
+    nTerms = 1;
+    nDaysPT = 30;   %debug by fei
+    nEVs = 100;
+    chargingStrategy = 4;
+    isOutput = false;
+    
+    % 二进制序列转换成符合一定约束的数值
+    [wCoeff, minSOC] = Bin2VarByConstraint(pop);
+    
+    % MC模拟
+    [all_indices, mday_indices] = EVPowerLoad(nTerms, nDaysPT, nEVs, ...
+                            chargingStrategy, wCoeff, minSOC, isOutput);
+    
+    % 适应度：其值越低，性能越高
+    FitVal = 1 - mday_indices;
+    %fprintf('----平均综合指标：Y=%f，拟合度=%f----\n', mean(all_indices), FitVal);
+end
+
+
+
